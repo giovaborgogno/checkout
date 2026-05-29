@@ -38,6 +38,7 @@ export interface IGitCommandManager {
       filter?: string
       fetchDepth?: number
       showProgress?: boolean
+      timeout?: number
     }
   ): Promise<void>
   getDefaultBranch(repositoryUrl: string): Promise<string>
@@ -280,6 +281,7 @@ class GitCommandManager {
       filter?: string
       fetchDepth?: number
       showProgress?: boolean
+      timeout?: number
     }
   ): Promise<void> {
     const args = ['-c', 'protocol.version=2', 'fetch']
@@ -313,7 +315,7 @@ class GitCommandManager {
 
     const that = this
     await retryHelper.execute(async () => {
-      await that.execGit(args)
+      await that.execGit(args, false, false, {}, options.timeout)
     })
   }
 
@@ -613,7 +615,8 @@ class GitCommandManager {
     args: string[],
     allowAllExitCodes = false,
     silent = false,
-    customListeners = {}
+    customListeners = {},
+    timeoutSeconds = 0
   ): Promise<GitOutput> {
     fshelper.directoryExistsSync(this.workingDirectory, true)
 
@@ -644,7 +647,32 @@ class GitCommandManager {
       listeners: mergedListeners
     }
 
-    result.exitCode = await exec.exec(`"${this.gitPath}"`, args, options)
+    // Bound the git invocation with the coreutils `timeout` utility when a
+    // per-attempt timeout is requested. This kills a git process that hangs
+    // (e.g. a stalled `fetch` during "fetch repository") so the surrounding
+    // retryHelper can retry on a fresh attempt instead of stalling for hours.
+    // `timeout` is only reliably present on Linux runners; on other platforms
+    // we fall back to running git directly (no timeout).
+    if (timeoutSeconds > 0 && process.platform === 'linux') {
+      result.exitCode = await exec.exec(
+        'timeout',
+        ['--kill-after=10', `${timeoutSeconds}`, this.gitPath, ...args],
+        options
+      )
+      // 124 (TERM) / 137 (SIGKILL) signal a timeout kill from `timeout`.
+      if (
+        !allowAllExitCodes &&
+        (result.exitCode === 124 || result.exitCode === 137)
+      ) {
+        throw new Error(
+          `The command timed out after ${timeoutSeconds} seconds: git ${args.join(
+            ' '
+          )}`
+        )
+      }
+    } else {
+      result.exitCode = await exec.exec(`"${this.gitPath}"`, args, options)
+    }
     result.stdout = stdout.join('')
 
     core.debug(result.exitCode.toString())

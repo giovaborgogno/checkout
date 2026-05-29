@@ -50,6 +50,13 @@ export interface IGitSourceSettings {
   fetchDepth: number
 
   /**
+   * Per-attempt timeout (in seconds) for the git fetch. 0 disables the
+   * timeout. When set, a fetch that hangs is killed after this many seconds
+   * and retried (Linux runners only).
+   */
+  fetchTimeout: number
+
+  /**
    * Fetch tags, even if fetchDepth > 0 (default: false)
    */
   fetchTags: boolean

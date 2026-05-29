@@ -108,6 +108,15 @@ export async function getInputs(): Promise<IGitSourceSettings> {
   }
   core.debug(`fetch depth = ${result.fetchDepth}`)
 
+  // Fetch timeout (per-attempt, seconds). 0 disables.
+  result.fetchTimeout = Math.floor(
+    Number(core.getInput('fetch-timeout') || '0')
+  )
+  if (isNaN(result.fetchTimeout) || result.fetchTimeout < 0) {
+    result.fetchTimeout = 0
+  }
+  core.debug(`fetch timeout = ${result.fetchTimeout}`)
+
   // Fetch tags
   result.fetchTags =
     (core.getInput('fetch-tags') || 'false').toUpperCase() === 'TRUE'

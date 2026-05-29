@@ -852,7 +852,7 @@ class GitCommandManager {
             }
             const that = this;
             yield retryHelper.execute(() => __awaiter(this, void 0, void 0, function* () {
-                yield that.execGit(args);
+                yield that.execGit(args, false, false, {}, options.timeout);
             }));
         });
     }
@@ -1115,7 +1115,7 @@ class GitCommandManager {
         });
     }
     execGit(args_1) {
-        return __awaiter(this, arguments, void 0, function* (args, allowAllExitCodes = false, silent = false, customListeners = {}) {
+        return __awaiter(this, arguments, void 0, function* (args, allowAllExitCodes = false, silent = false, customListeners = {}, timeoutSeconds = 0) {
             fshelper.directoryExistsSync(this.workingDirectory, true);
             const result = new GitOutput();
             const env = {};
@@ -1139,7 +1139,23 @@ class GitCommandManager {
                 ignoreReturnCode: allowAllExitCodes,
                 listeners: mergedListeners
             };
-            result.exitCode = yield exec.exec(`"${this.gitPath}"`, args, options);
+            // Bound the git invocation with the coreutils `timeout` utility when a
+            // per-attempt timeout is requested. This kills a git process that hangs
+            // (e.g. a stalled `fetch` during "fetch repository") so the surrounding
+            // retryHelper can retry on a fresh attempt instead of stalling for hours.
+            // `timeout` is only reliably present on Linux runners; on other platforms
+            // we fall back to running git directly (no timeout).
+            if (timeoutSeconds > 0 && process.platform === 'linux') {
+                result.exitCode = yield exec.exec('timeout', ['--kill-after=10', `${timeoutSeconds}`, this.gitPath, ...args], options);
+                // 124 (TERM) / 137 (SIGKILL) signal a timeout kill from `timeout`.
+                if (!allowAllExitCodes &&
+                    (result.exitCode === 124 || result.exitCode === 137)) {
+                    throw new Error(`The command timed out after ${timeoutSeconds} seconds: git ${args.join(' ')}`);
+                }
+            }
+            else {
+                result.exitCode = yield exec.exec(`"${this.gitPath}"`, args, options);
+            }
             result.stdout = stdout.join('');
             core.debug(result.exitCode.toString());
             core.debug(result.stdout);
@@ -1523,6 +1539,9 @@ function getSource(settings) {
             // Fetch
             core.startGroup('Fetching the repository');
             const fetchOptions = {};
+            if (settings.fetchTimeout > 0) {
+                fetchOptions.timeout = settings.fetchTimeout;
+            }
             if (settings.filter) {
                 fetchOptions.filter = settings.filter;
             }
@@ -2051,6 +2070,12 @@ function getInputs() {
             result.fetchDepth = 0;
         }
         core.debug(`fetch depth = ${result.fetchDepth}`);
+        // Fetch timeout (per-attempt, seconds). 0 disables.
+        result.fetchTimeout = Math.floor(Number(core.getInput('fetch-timeout') || '0'));
+        if (isNaN(result.fetchTimeout) || result.fetchTimeout < 0) {
+            result.fetchTimeout = 0;
+        }
+        core.debug(`fetch timeout = ${result.fetchTimeout}`);
         // Fetch tags
         result.fetchTags =
             (core.getInput('fetch-tags') || 'false').toUpperCase() === 'TRUE';

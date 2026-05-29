@@ -74,6 +74,13 @@ inputs:
   fetch-depth:
     description: 'Number of commits to fetch. 0 indicates all history for all branches and tags.'
     default: 1
+  fetch-timeout:
+    description: >
+      Per-attempt timeout (in seconds) for the git fetch. 0 disables it. When
+      set, a fetch that hangs is killed after this many seconds and retried
+      (the existing fetch retry handles re-attempts). Useful to escape runner
+      "fetch repository" stalls. Linux runners only; ignored elsewhere.
+    default: 0
   fetch-tags:
     description: 'Whether to fetch tags, even if fetch-depth > 0.'
     default: false

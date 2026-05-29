@@ -129,6 +129,13 @@ Please refer to the [release page](https://github.com/actions/checkout/releases/
     # Default: 1
     fetch-depth: ''
 
+    # Per-attempt timeout (in seconds) for the git fetch. 0 disables it. When set, a
+    # fetch that hangs is killed after this many seconds and retried (the existing
+    # fetch retry handles re-attempts). Useful to escape runner "fetch repository"
+    # stalls. Linux runners only; ignored elsewhere.
+    # Default: 0
+    fetch-timeout: ''
+
     # Whether to fetch tags, even if fetch-depth > 0.
     # Default: false
     fetch-tags: ''
