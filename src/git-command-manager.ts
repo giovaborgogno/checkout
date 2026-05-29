@@ -39,6 +39,7 @@ export interface IGitCommandManager {
       fetchDepth?: number
       showProgress?: boolean
       timeout?: number
+      retries?: number
     }
   ): Promise<void>
   getDefaultBranch(repositoryUrl: string): Promise<string>
@@ -282,6 +283,7 @@ class GitCommandManager {
       fetchDepth?: number
       showProgress?: boolean
       timeout?: number
+      retries?: number
     }
   ): Promise<void> {
     const args = ['-c', 'protocol.version=2', 'fetch']
@@ -316,7 +318,7 @@ class GitCommandManager {
     const that = this
     await retryHelper.execute(async () => {
       await that.execGit(args, false, false, {}, options.timeout)
-    })
+    }, options.retries)
   }
 
   async getDefaultBranch(repositoryUrl: string): Promise<string> {

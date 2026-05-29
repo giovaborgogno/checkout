@@ -57,6 +57,13 @@ export interface IGitSourceSettings {
   fetchTimeout: number
 
   /**
+   * Maximum number of git fetch attempts (including the first). Defaults to 3
+   * when unset. Combined with fetchTimeout, a hung attempt is killed and
+   * retried up to this many times.
+   */
+  fetchRetries: number
+
+  /**
    * Fetch tags, even if fetchDepth > 0 (default: false)
    */
   fetchTags: boolean

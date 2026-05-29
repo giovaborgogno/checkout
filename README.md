@@ -130,11 +130,17 @@ Please refer to the [release page](https://github.com/actions/checkout/releases/
     fetch-depth: ''
 
     # Per-attempt timeout (in seconds) for the git fetch. 0 disables it. When set, a
-    # fetch that hangs is killed after this many seconds and retried (the existing
-    # fetch retry handles re-attempts). Useful to escape runner "fetch repository"
-    # stalls. Linux runners only; ignored elsewhere.
+    # fetch that hangs is killed after this many seconds and retried (see
+    # fetch-retries). Useful to escape runner "fetch repository" stalls. Linux runners
+    # only; ignored elsewhere.
     # Default: 0
     fetch-timeout: ''
+
+    # Maximum number of git fetch attempts, including the first (e.g. 3 means up to 2
+    # retries). 0 uses the built-in default of 3. Pairs with fetch-timeout so a hung
+    # attempt is killed and retried.
+    # Default: 0
+    fetch-retries: ''
 
     # Whether to fetch tags, even if fetch-depth > 0.
     # Default: false

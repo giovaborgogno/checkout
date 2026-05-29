@@ -117,6 +117,15 @@ export async function getInputs(): Promise<IGitSourceSettings> {
   }
   core.debug(`fetch timeout = ${result.fetchTimeout}`)
 
+  // Fetch retries (max attempts). 0 falls back to the built-in default.
+  result.fetchRetries = Math.floor(
+    Number(core.getInput('fetch-retries') || '0')
+  )
+  if (isNaN(result.fetchRetries) || result.fetchRetries < 0) {
+    result.fetchRetries = 0
+  }
+  core.debug(`fetch retries = ${result.fetchRetries}`)
+
   // Fetch tags
   result.fetchTags =
     (core.getInput('fetch-tags') || 'false').toUpperCase() === 'TRUE'

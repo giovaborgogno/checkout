@@ -853,7 +853,7 @@ class GitCommandManager {
             const that = this;
             yield retryHelper.execute(() => __awaiter(this, void 0, void 0, function* () {
                 yield that.execGit(args, false, false, {}, options.timeout);
-            }));
+            }), options.retries);
         });
     }
     getDefaultBranch(repositoryUrl) {
@@ -1542,6 +1542,9 @@ function getSource(settings) {
             if (settings.fetchTimeout > 0) {
                 fetchOptions.timeout = settings.fetchTimeout;
             }
+            if (settings.fetchRetries > 0) {
+                fetchOptions.retries = settings.fetchRetries;
+            }
             if (settings.filter) {
                 fetchOptions.filter = settings.filter;
             }
@@ -2076,6 +2079,12 @@ function getInputs() {
             result.fetchTimeout = 0;
         }
         core.debug(`fetch timeout = ${result.fetchTimeout}`);
+        // Fetch retries (max attempts). 0 falls back to the built-in default.
+        result.fetchRetries = Math.floor(Number(core.getInput('fetch-retries') || '0'));
+        if (isNaN(result.fetchRetries) || result.fetchRetries < 0) {
+            result.fetchRetries = 0;
+        }
+        core.debug(`fetch retries = ${result.fetchRetries}`);
         // Fetch tags
         result.fetchTags =
             (core.getInput('fetch-tags') || 'false').toUpperCase() === 'TRUE';
@@ -2612,9 +2621,9 @@ class RetryHelper {
     }
 }
 exports.RetryHelper = RetryHelper;
-function execute(action) {
+function execute(action, maxAttempts) {
     return __awaiter(this, void 0, void 0, function* () {
-        const retryHelper = new RetryHelper();
+        const retryHelper = new RetryHelper(maxAttempts);
         return yield retryHelper.execute(action);
     });
 }

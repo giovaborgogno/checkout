@@ -161,10 +161,15 @@ export async function getSource(settings: IGitSourceSettings): Promise<void> {
       fetchDepth?: number
       showProgress?: boolean
       timeout?: number
+      retries?: number
     } = {}
 
     if (settings.fetchTimeout > 0) {
       fetchOptions.timeout = settings.fetchTimeout
+    }
+
+    if (settings.fetchRetries > 0) {
+      fetchOptions.retries = settings.fetchRetries
     }
 
     if (settings.filter) {

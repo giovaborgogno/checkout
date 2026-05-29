@@ -78,8 +78,14 @@ inputs:
     description: >
       Per-attempt timeout (in seconds) for the git fetch. 0 disables it. When
       set, a fetch that hangs is killed after this many seconds and retried
-      (the existing fetch retry handles re-attempts). Useful to escape runner
-      "fetch repository" stalls. Linux runners only; ignored elsewhere.
+      (see fetch-retries). Useful to escape runner "fetch repository" stalls.
+      Linux runners only; ignored elsewhere.
+    default: 0
+  fetch-retries:
+    description: >
+      Maximum number of git fetch attempts, including the first (e.g. 3 means
+      up to 2 retries). 0 uses the built-in default of 3. Pairs with
+      fetch-timeout so a hung attempt is killed and retried.
     default: 0
   fetch-tags:
     description: 'Whether to fetch tags, even if fetch-depth > 0.'
